@@ -4,6 +4,9 @@ import org.automation.reports.CsvReportGenerator;
 import org.automation.reports.ExcelReportGenerator;
 import org.automation.reports.HtmlReportGenerator;
 import org.testng.TestNG;
+import org.testng.reporters.JUnitReportReporter;
+import org.testng.reporters.XMLReporter;
+import org.testng.reporters.EmailableReporter2;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlTest;
@@ -67,20 +70,29 @@ public class ParallelTestScheduler {
         suites.add(suite);
         testng.setXmlSuites(suites);
 
-        // Run the suite
+        // ✅ Set custom JUnit report output directory
+        testng.setOutputDirectory("D:\\DevTools\\IdeaProject\\AutomationFramework\\artifacts\\j-unit");
+
+        // ✅ Add reporters so that JUnit & TestNG XML reports are generated
+        testng.addListener(new JUnitReportReporter());  // Generates JUnit-style XML
+        testng.addListener(new XMLReporter());          // Generates TestNG default XML
+        testng.addListener(new EmailableReporter2());   // Optional: HTML email report
+
+        // -------------------- Run the suite --------------------
+        System.out.println("🚀 Starting parallel test execution...");
         testng.run();
 
-        // -------------------- Generate Reports after ALL suites finish --------------------
+        // -------------------- Generate Custom Reports --------------------
         try {
             CsvReportGenerator.generateReport();
             ExcelReportGenerator.generateReport();
             HtmlReportGenerator.generateReport();
             System.out.println("✅ Reports generated successfully!");
         } catch (Exception e) {
-            System.err.println("Error generating reports: " + e.getMessage());
+            System.err.println("❌ Error generating reports: " + e.getMessage());
             e.printStackTrace();
         }
 
-        System.out.println("Suite Execution Finished: AutomationFrameworkSuite");
+        System.out.println("✅ Suite Execution Finished: AutomationFrameworkSuite");
     }
 }
