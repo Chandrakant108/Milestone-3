@@ -1,0 +1,50 @@
+name: Full Regression
+
+on:
+  push:
+  schedule:
+    - cron: '0 1 * * *' # nightly at 01:00 UTC
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Start MySQL service (optional)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-server
+          sudo service mysql start
+          mysql -e "CREATE DATABASE IF NOT EXISTS automation_tests;"
+          mysql -e "CREATE USER IF NOT EXISTS 'ci'@'localhost' IDENTIFIED BY 'ci'; GRANT ALL PRIVILEGES ON automation_tests.* TO 'ci'@'localhost'; FLUSH PRIVILEGES;"
+
+      - name: Build & Run Tests
+        run: mvn -B test -DskipTests=false
+
+      - name: Collect artifacts (reports/screenshots)
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-artifacts
+          path: |
+            artifacts/html-report/**
+            artifacts/screenshots/**
+            target/surefire-reports/**
+
+      - name: Call analytics refresh endpoint
+        run: |
+          curl -X POST "http://localhost:8080/analytics/refresh" || true

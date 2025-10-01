@@ -3,6 +3,7 @@
     <listeners>
         <listener class-name="org.automation.listeners.TestSuiteListener"/>
         <listener class-name="org.automation.listeners.SuiteExecutionListener"/>
+            <listener class-name="org.automation.listeners.DbResultListener"/>
     </listeners>
 
     <!-- UI Tests run methods in parallel to isolate WebDriver instances -->
