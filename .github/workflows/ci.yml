@@ -1,26 +1,27 @@
-name: Automation Framework CI
+name: 🚀 Automation Framework CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ master ]
-  workflow_dispatch:  # manual trigger
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  DB_HOST: localhost
+  DB_PORT: 3306
+  DB_NAME: automation_tests
+  DB_USER: root
+  DB_PASS: Ck@709136  # ⚠️ Replace with GitHub Secret later
 
 jobs:
-
   # =========================
-  # Job 1: Run API Tests
+  # Job 1: API Tests
   # =========================
   api-tests:
+    name: 🧪 API Tests
     runs-on: ubuntu-latest
-
-    env:
-      DB_HOST: localhost
-      DB_PORT: 3306
-      DB_NAME: automation_tests
-      DB_USER: root
-      DB_PASS: Ck@709136  # consider using GitHub Secrets
+    timeout-minutes: 30
 
     services:
       mysql:
@@ -28,25 +29,25 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: Ck@709136
-          MYSQL_DATABASE: automation_tests
+          MYSQL_ROOT_PASSWORD: ${{ env.DB_PASS }}
+          MYSQL_DATABASE: ${{ env.DB_NAME }}
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
+          --health-retries=5
 
     steps:
-      - name: Checkout code
+      - name: 📂 Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up JDK 23
+      - name: ☕ Set up JDK 23
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 23
 
-      - name: Cache Maven packages
+      - name: 💾 Cache Maven Dependencies
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -54,35 +55,31 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Build with Maven
+      - name: 🏗️ Build Project
         run: mvn clean install -DskipTests
 
-      - name: Run API Tests
+      - name: ▶️ Run API Tests
         run: mvn test -Dtest=**/*JsonPlaceholderTests.java
 
-      - name: Upload API Test Artifacts
+      - name: 📦 Upload API Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: api-test-reports
           path: |
-            artifacts/html/*
-            artifacts/csv/*
-            artifacts/excel/*
-            artifacts/j-unit/*
-            artifacts/logs/*
+            artifacts/html/**/*
+            artifacts/csv/**/*
+            artifacts/excel/**/*
+            artifacts/j-unit/**/*
+            artifacts/logs/**/*
 
   # =========================
-  # Job 2: Run UI Tests
+  # Job 2: UI Tests
   # =========================
   ui-tests:
+    name: 🌐 UI Tests
     runs-on: ubuntu-latest
-
-    env:
-      DB_HOST: localhost
-      DB_PORT: 3306
-      DB_NAME: automation_tests
-      DB_USER: root
-      DB_PASS: Ck@709136
+    needs: api-tests  # ✅ Run only after API tests pass
+    timeout-minutes: 40
 
     services:
       mysql:
@@ -90,25 +87,25 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: Ck@709136
-          MYSQL_DATABASE: automation_tests
+          MYSQL_ROOT_PASSWORD: ${{ env.DB_PASS }}
+          MYSQL_DATABASE: ${{ env.DB_NAME }}
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
+          --health-retries=5
 
     steps:
-      - name: Checkout code
+      - name: 📂 Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up JDK 23
+      - name: ☕ Set up JDK 23
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 23
 
-      - name: Cache Maven packages
+      - name: 💾 Cache Maven Dependencies
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -116,20 +113,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Build with Maven
+      - name: 🏗️ Build Project
         run: mvn clean install -DskipTests
 
-      - name: Run UI Tests
+      - name: ▶️ Run UI Tests
         run: mvn test -Dtest=**/*BlazeDemoTests.java
 
-      - name: Upload UI Test Artifacts
+      - name: 📦 Upload UI Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ui-test-reports
           path: |
-            artifacts/html/*
-            artifacts/csv/*
-            artifacts/excel/*
-            artifacts/j-unit/*
-            artifacts/screenshots/*
-            artifacts/logs/*
+            artifacts/html/**/*
+            artifacts/csv/**/*
+            artifacts/excel/**/*
+            artifacts/j-unit/**/*
+            artifacts/screenshots/**/*
+            artifacts/logs/**/*
