@@ -1,3 +1,7 @@
+#-------------------------------------------------------------------------------#
+# Full CI Pipeline: Qodana + Regression Tests + Reports + Analytics
+#-------------------------------------------------------------------------------#
+
 name: Full CI Pipeline
 
 on:
@@ -9,16 +13,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  regression-tests:
+  ci-pipeline:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         java-version: [17]
 
     steps:
-      # Step 1: Checkout
-      - name: Checkout repository
+      # Step 1: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Step 2: Setup Java
       - name: Set up Java
@@ -36,28 +42,65 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # Step 4: Run tests in parallel
+      # Step 4: Run Qodana Code Quality Scan
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2025.2
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        with:
+          pr-mode: false
+          use-caches: true
+          post-pr-comment: true
+          use-annotations: true
+          upload-result: true
+          push-fixes: 'none'
+          output-path: qodana-results
+
+      # Step 5: Upload Qodana SARIF for GitHub Code Scanning
+      - name: Upload Qodana SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: qodana-results/sarif/qodana.sarif.json
+          checkout_path: ${{ github.workspace }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 6: Upload Qodana HTML report
+      - name: Upload Qodana HTML Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: qodana-html-report
+          path: qodana-results/report
+
+      # Step 7: Run UI and API Tests in Parallel
       - name: Run UI and API Tests
         run: |
           mvn clean test \
             -Dsurefire.parallel=classes \
             -Dsurefire.threadCount=10
 
-      # Step 5: Upload HTML Reports
-      - name: Upload HTML Reports
+      # Step 8: Upload Test HTML Reports
+      - name: Upload Test HTML Reports
         uses: actions/upload-artifact@v3
         with:
           name: html-reports
           path: artifacts/reports/*.html
 
-      # Step 6: Upload Screenshots
+      # Step 9: Upload Screenshots
       - name: Upload Screenshots
         uses: actions/upload-artifact@v3
         with:
           name: screenshots
           path: artifacts/screenshots/*.png
 
-      # Step 7: Optional: Call Analytics
+      # Step 10: Upload API Artifacts
+      - name: Upload API JSON Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: api-artifacts
+          path: artifacts/api/*.json
+
+      # Step 11: Optional - Call Analytics Endpoint
       - name: Refresh Analytics
         run: |
           curl -X POST https://jsonplaceholder.typicode.com/posts \
