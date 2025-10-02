@@ -65,7 +65,10 @@ jobs:
           sudo apt-get install -y mysql-client
           echo "Waiting for MySQL to be ready..."
           for i in {1..30}; do
-            mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} && break
+            if mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} --silent; then
+              echo "MySQL is ready!"
+              break
+            fi
             sleep 2
           done
           echo "Initializing DB..."
@@ -134,7 +137,10 @@ jobs:
           sudo apt-get install -y mysql-client
           echo "Waiting for MySQL to be ready..."
           for i in {1..30}; do
-            mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} && break
+            if mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} --silent; then
+              echo "MySQL is ready!"
+              break
+            fi
             sleep 2
           done
           echo "Initializing DB..."
@@ -147,10 +153,12 @@ jobs:
           ls -l $CHROME_BIN $CHROMEDRIVER_BIN
 
       - name: ▶️ Run UI Tests (Headless Chrome)
-        run: mvn test -Dtest=**/*BlazeDemoTests.java \
-          -Dselenium.headless=true \
-          -Dchrome.binary=$CHROME_BIN \
-          -Dwebdriver.chrome.driver=$CHROMEDRIVER_BIN
+        run: |
+          export DISPLAY=:99
+          mvn test -Dtest=**/*BlazeDemoTests.java \
+            -Dselenium.headless=true \
+            -Dchrome.binary=$CHROME_BIN \
+            -Dwebdriver.chrome.driver=$CHROMEDRIVER_BIN
 
       - name: 📦 Upload UI Artifacts
         uses: actions/upload-artifact@v4
