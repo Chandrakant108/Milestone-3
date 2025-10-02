@@ -1,0 +1,137 @@
+name: Full CI Pipeline (All-in-One Artifacts)
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+
+  # ------------------------------
+  # Qodana Code Quality Job
+  # ------------------------------
+  qodana:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2025.2
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        with:
+          pr-mode: false
+          use-caches: true
+          post-pr-comment: true
+          use-annotations: true
+          upload-result: true
+          push-fixes: 'none'
+          output-path: artifacts/qodana
+
+      - name: Upload Qodana SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: artifacts/qodana/sarif/qodana.sarif.json
+          checkout_path: ${{ github.workspace }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ------------------------------
+  # UI Tests Job
+  # ------------------------------
+  ui-tests:
+    runs-on: ubuntu-latest
+    needs: qodana
+    strategy:
+      matrix:
+        java-version: [17]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run UI Tests
+        run: mvn clean test -Dsurefire.includes=**/*BlazeDemoUITests.java -Dsurefire.parallel=classes -Dsurefire.threadCount=10
+
+      - name: Move UI artifacts to combined folder
+        run: |
+          mkdir -p artifacts/full-ci/ui
+          cp -r artifacts/html/* artifacts/full-ci/ui/
+          cp -r artifacts/screenshots/* artifacts/full-ci/ui/
+
+  # ------------------------------
+  # API Tests Job
+  # ------------------------------
+  api-tests:
+    runs-on: ubuntu-latest
+    needs: qodana
+    strategy:
+      matrix:
+        java-version: [17]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run API Tests
+        run: mvn clean test -Dsurefire.includes=**/*JsonPlaceholderTests.java -Dsurefire.parallel=classes -Dsurefire.threadCount=10
+
+      - name: Move API artifacts to combined folder
+        run: |
+          mkdir -p artifacts/full-ci/api
+          cp -r artifacts/html/* artifacts/full-ci/api/
+
+      - name: Call Analytics Endpoint
+        run: |
+          curl -X POST https://jsonplaceholder.typicode.com/posts \
+               -H "Content-Type: application/json" \
+               -d '{"triggered_by": "github_actions"}'
+
+  # ------------------------------
+  # Upload All Artifacts Job
+  # ------------------------------
+  upload-all-artifacts:
+    runs-on: ubuntu-latest
+    needs: [qodana, ui-tests, api-tests]
+    steps:
+      - name: Upload All CI Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: full-ci-artifacts
+          path: artifacts/full-ci/
