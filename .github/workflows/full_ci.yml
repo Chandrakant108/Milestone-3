@@ -1,0 +1,65 @@
+name: Full CI Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  schedule:
+    - cron: '0 2 * * *' # nightly at 2:00 AM UTC
+  workflow_dispatch:
+
+jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: [17]
+
+    steps:
+      # Step 1: Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Java
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+
+      # Step 3: Cache Maven dependencies
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Step 4: Run tests in parallel
+      - name: Run UI and API Tests
+        run: |
+          mvn clean test \
+            -Dsurefire.parallel=classes \
+            -Dsurefire.threadCount=10
+
+      # Step 5: Upload HTML Reports
+      - name: Upload HTML Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: html-reports
+          path: artifacts/reports/*.html
+
+      # Step 6: Upload Screenshots
+      - name: Upload Screenshots
+        uses: actions/upload-artifact@v3
+        with:
+          name: screenshots
+          path: artifacts/screenshots/*.png
+
+      # Step 7: Optional: Call Analytics
+      - name: Refresh Analytics
+        run: |
+          curl -X POST https://jsonplaceholder.typicode.com/posts \
+               -H "Content-Type: application/json" \
+               -d '{"triggered_by": "github_actions"}'
