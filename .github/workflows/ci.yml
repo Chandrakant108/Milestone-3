@@ -13,6 +13,8 @@ env:
   DB_NAME: automation_tests
   DB_USER: root
   DB_PASS: Ck@709136  # ⚠️ Replace with GitHub Secret later
+  CHROME_BIN: /usr/bin/chromium
+  CHROMEDRIVER_BIN: /usr/bin/chromedriver
 
 jobs:
   # =========================
@@ -61,12 +63,10 @@ jobs:
       - name: 🛠️ Initialize MySQL Tables
         run: |
           sudo apt-get install -y mysql-client
-          # Wait for MySQL service to be ready
           for i in {1..30}; do
             mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} && break
             sleep 2
           done
-          # Run SQL init script
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: ▶️ Run API Tests
@@ -91,20 +91,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: api-tests
     timeout-minutes: 40
-
-    services:
-      mysql:
-        image: mysql:8.0
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: ${{ env.DB_PASS }}
-          MYSQL_DATABASE: ${{ env.DB_NAME }}
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
 
     steps:
       - name: 📂 Checkout Code
@@ -136,17 +122,17 @@ jobs:
           done
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
-      - name: 🖥️ Install Chromium & WebDriver
+      - name: 🖥️ Install Chromium & ChromeDriver
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium chromium-driver
-          export CHROME_BIN=/usr/bin/chromium
-          export CHROMEDRIVER_BIN=/usr/bin/chromedriver
+          ls -l $CHROME_BIN $CHROMEDRIVER_BIN
 
-      - name: ▶️ Run UI Tests
+      - name: ▶️ Run UI Tests (Headless Chrome)
         run: mvn test -Dtest=**/*BlazeDemoTests.java \
           -Dselenium.headless=true \
-          -Dwebdriver.chrome.driver=/usr/bin/chromedriver
+          -Dchrome.binary=$CHROME_BIN \
+          -Dwebdriver.chrome.driver=$CHROMEDRIVER_BIN
 
       - name: 📦 Upload UI Artifacts
         uses: actions/upload-artifact@v4
