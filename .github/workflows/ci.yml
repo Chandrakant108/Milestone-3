@@ -58,6 +58,11 @@ jobs:
       - name: 🏗️ Build Project
         run: mvn clean install -DskipTests
 
+      - name: 🛠️ Initialize MySQL Tables
+        run: |
+          sudo apt-get install -y mysql-client
+          mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
+
       - name: ▶️ Run API Tests
         run: mvn test -Dtest=**/*JsonPlaceholderTests.java
 
@@ -78,7 +83,7 @@ jobs:
   ui-tests:
     name: 🌐 UI Tests
     runs-on: ubuntu-latest
-    needs: api-tests  # ✅ Run only after API tests pass
+    needs: api-tests
     timeout-minutes: 40
 
     services:
@@ -115,6 +120,17 @@ jobs:
 
       - name: 🏗️ Build Project
         run: mvn clean install -DskipTests
+
+      - name: 🛠️ Initialize MySQL Tables
+        run: |
+          sudo apt-get install -y mysql-client
+          mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
+
+      - name: 🖥️ Install Chromium & WebDriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          which chromedriver
 
       - name: ▶️ Run UI Tests
         run: mvn test -Dtest=**/*BlazeDemoTests.java
