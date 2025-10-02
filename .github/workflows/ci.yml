@@ -61,6 +61,12 @@ jobs:
       - name: 🛠️ Initialize MySQL Tables
         run: |
           sudo apt-get install -y mysql-client
+          # Wait for MySQL service to be ready
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} && break
+            sleep 2
+          done
+          # Run SQL init script
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: ▶️ Run API Tests
@@ -124,16 +130,23 @@ jobs:
       - name: 🛠️ Initialize MySQL Tables
         run: |
           sudo apt-get install -y mysql-client
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} && break
+            sleep 2
+          done
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: 🖥️ Install Chromium & WebDriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
-          which chromedriver
+          sudo apt-get install -y chromium chromium-driver
+          export CHROME_BIN=/usr/bin/chromium
+          export CHROMEDRIVER_BIN=/usr/bin/chromedriver
 
       - name: ▶️ Run UI Tests
-        run: mvn test -Dtest=**/*BlazeDemoTests.java
+        run: mvn test -Dtest=**/*BlazeDemoTests.java \
+          -Dselenium.headless=true \
+          -Dwebdriver.chrome.driver=/usr/bin/chromedriver
 
       - name: 📦 Upload UI Artifacts
         uses: actions/upload-artifact@v4

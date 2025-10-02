@@ -18,10 +18,23 @@ public class BaseTest {
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() {
+        // ✅ Use environment variables for CI paths
+        String chromeBinary = System.getenv("CHROME_BIN");
+        String chromeDriver = System.getenv("CHROMEDRIVER_BIN");
+
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--start-maximized");
-        WebDriver webDriver = new ChromeDriver(options);
-        DriverManager.setDriver(webDriver); // Save driver in ThreadLocal
+        options.addArguments("--headless", "--no-sandbox", "--disable-dev-shm-usage");
+
+        if (chromeBinary != null && !chromeBinary.isEmpty()) {
+            options.setBinary(chromeBinary);
+        }
+
+        if (chromeDriver != null && !chromeDriver.isEmpty()) {
+            System.setProperty("webdriver.chrome.driver", chromeDriver);
+        }
+
+        WebDriver driver = new ChromeDriver(options);
+        DriverManager.setDriver(driver); // Save driver in ThreadLocal
     }
 
     public WebDriver getDriver() {
@@ -47,7 +60,7 @@ public class BaseTest {
         }
     }
 
-    // (Optional) Manual screenshot helper — not needed if ScreenshotUtils is used.
+    // Optional: Manual screenshot helper
     public void takeScreenshot(String name) {
         WebDriver driver = DriverManager.getDriver();
         if (driver == null) return;
