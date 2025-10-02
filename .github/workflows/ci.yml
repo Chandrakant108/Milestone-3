@@ -37,7 +37,7 @@ jobs:
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       - name: 📂 Checkout Code
@@ -63,10 +63,12 @@ jobs:
       - name: 🛠️ Initialize MySQL Tables
         run: |
           sudo apt-get install -y mysql-client
+          echo "Waiting for MySQL to be ready..."
           for i in {1..30}; do
             mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} && break
             sleep 2
           done
+          echo "Initializing DB..."
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: ▶️ Run API Tests
@@ -92,6 +94,20 @@ jobs:
     needs: api-tests
     timeout-minutes: 40
 
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ env.DB_PASS }}
+          MYSQL_DATABASE: ${{ env.DB_NAME }}
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - name: 📂 Checkout Code
         uses: actions/checkout@v3
@@ -116,10 +132,12 @@ jobs:
       - name: 🛠️ Initialize MySQL Tables
         run: |
           sudo apt-get install -y mysql-client
+          echo "Waiting for MySQL to be ready..."
           for i in {1..30}; do
             mysqladmin ping -h 127.0.0.1 -u root -p${{ env.DB_PASS }} && break
             sleep 2
           done
+          echo "Initializing DB..."
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: 🖥️ Install Chromium & ChromeDriver
