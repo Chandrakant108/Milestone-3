@@ -15,18 +15,19 @@ jobs:
     strategy:
       matrix:
         java-version: [17]
+
     steps:
-      # Checkout repository
+      # Step 1: Checkout repository
       - uses: actions/checkout@v4
 
-      # Setup Java
+      # Step 2: Setup Java
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
 
-      # Cache Maven packages
+      # Step 3: Cache Maven packages
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -35,27 +36,42 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # Run tests in parallel
+      # Step 4: Run UI and API Tests in parallel
       - name: Run UI and API Tests
         run: mvn clean test -Dsurefire.parallel=classes -Dsurefire.threadCount=10
 
-      # Upload HTML reports
+      # Step 5: Upload HTML reports (if exist)
       - name: Upload HTML Reports
-        uses: actions/upload-artifact@v3
+        if: always()
+        run: |
+          if compgen -G "artifacts/html/*.html" > /dev/null; then
+            echo "HTML reports found, uploading..."
+          else
+            echo "No HTML reports found."
+          fi
+        uses: actions/upload-artifact@v4
         with:
           name: html-reports
           path: artifacts/html/*.html
 
-      # Upload screenshots
+      # Step 6: Upload screenshots (if exist)
       - name: Upload Screenshots
-        uses: actions/upload-artifact@v3
+        if: always()
+        run: |
+          if compgen -G "artifacts/screenshots/*.png" > /dev/null; then
+            echo "Screenshots found, uploading..."
+          else
+            echo "No screenshots found."
+          fi
+        uses: actions/upload-artifact@v4
         with:
           name: screenshots
           path: artifacts/screenshots/*.png
 
-      # Optional: Call analytics endpoint (using JSONPlaceholder as placeholder)
+      # Step 7: Optional Analytics call (safe)
       - name: Refresh Analytics
         run: |
+          echo "Calling analytics endpoint..."
           curl -X POST https://jsonplaceholder.typicode.com/posts \
                -H "Content-Type: application/json" \
-               -d '{"triggered_by": "github_actions"}'
+               -d '{"triggered_by": "github_actions"}' || echo "Analytics call failed, continuing."

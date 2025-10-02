@@ -36,22 +36,26 @@ jobs:
           use-caches: true
           post-pr-comment: true
           use-annotations: true
-          upload-result: true           # Upload reports as artifact
+          upload-result: true
           push-fixes: 'none'
           output-path: qodana-results   # Path to store scan results
 
-      # Step 3: Upload SARIF file for GitHub Code Scanning
+      # Step 3: Upload SARIF file for GitHub Code Scanning (if exists)
       - name: Upload Qodana SARIF
-        if: always()                  # Run even if previous step fails
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: qodana-results/sarif/qodana.sarif.json
-          checkout_path: ${{ github.workspace }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+        if: always()
+        run: |
+          if [ -f qodana-results/sarif/qodana.sarif.json ]; then
+            echo "SARIF file found, uploading..."
+            gh codeql upload-sarif qodana-results/sarif/qodana.sarif.json
+          else
+            echo "SARIF file not found, skipping upload."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 4: Upload full Qodana HTML report as artifact
       - name: Upload Qodana HTML report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qodana-html-report
           path: qodana-results/report
