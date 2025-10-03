@@ -72,7 +72,6 @@ jobs:
             sleep 2
           done
           echo "📊 Initializing DB schema..."
-          # Drop & recreate tables to avoid missing columns
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: ▶️ Run API Tests
@@ -148,22 +147,30 @@ jobs:
           echo "📊 Initializing DB schema..."
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
-      - name: 🖥️ Install Chrome Dependencies
+      - name: 🖥️ Install Chrome & ChromeDriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
-
-      - name: 🖥️ Setup Chrome & ChromeDriver
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: latest
-          chromedriver-version: latest
+          sudo apt-get install -y wget unzip xvfb libxi6 libnss3 libxss1 libatk-bridge2.0-0 libgtk-3-0
+          wget -q -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome.deb || sudo apt-get -f install -y
+          CHROME_BIN=$(which google-chrome)
+          CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+          wget -q https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+          unzip chromedriver_linux64.zip
+          sudo mv chromedriver /usr/bin/chromedriver
+          sudo chmod +x /usr/bin/chromedriver
+          CHROMEDRIVER_BIN=/usr/bin/chromedriver
+          echo "✅ Chrome installed at: $CHROME_BIN"
+          echo "✅ ChromeDriver installed at: $CHROMEDRIVER_BIN"
+          echo "CHROME_BIN=$CHROME_BIN" >> $GITHUB_ENV
+          echo "CHROMEDRIVER_BIN=$CHROMEDRIVER_BIN" >> $GITHUB_ENV
 
       - name: ▶️ Run UI Tests
         run: |
-          DISPLAY=:99 mvn test -Dtest=**/*BlazeDemoTests.java \
-            -Dchrome.binary=/usr/bin/google-chrome \
-            -Dwebdriver.chrome.driver=/usr/bin/chromedriver
+          export DISPLAY=:99
+          mvn test -Dtest=**/*BlazeDemoTests.java \
+            -Dchrome.binary=$CHROME_BIN \
+            -Dwebdriver.chrome.driver=$CHROMEDRIVER_BIN
 
       - name: 📦 Upload UI Artifacts
         uses: actions/upload-artifact@v4
