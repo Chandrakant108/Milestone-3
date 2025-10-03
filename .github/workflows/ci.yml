@@ -72,6 +72,7 @@ jobs:
             sleep 2
           done
           echo "📊 Initializing DB schema..."
+          # Drop & recreate tables to avoid missing columns
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: ▶️ Run API Tests
@@ -147,7 +148,12 @@ jobs:
           echo "📊 Initializing DB schema..."
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
-      - name: 🖥️ Install Chrome & ChromeDriver
+      - name: 🖥️ Install Chrome Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
+
+      - name: 🖥️ Setup Chrome & ChromeDriver
         uses: browser-actions/setup-chrome@v2
         with:
           chrome-version: latest
@@ -155,9 +161,9 @@ jobs:
 
       - name: ▶️ Run UI Tests
         run: |
-          mvn test -Dtest=**/*BlazeDemoTests.java \
-            -Dchrome.binary=$CHROME_BIN \
-            -Dwebdriver.chrome.driver=$CHROMEDRIVER_BIN
+          DISPLAY=:99 mvn test -Dtest=**/*BlazeDemoTests.java \
+            -Dchrome.binary=/usr/bin/google-chrome \
+            -Dwebdriver.chrome.driver=/usr/bin/chromedriver
 
       - name: 📦 Upload UI Artifacts
         uses: actions/upload-artifact@v4
