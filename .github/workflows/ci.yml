@@ -148,27 +148,13 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: 🖥️ Install Chrome & ChromeDriver
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip xvfb libxi6 default-jdk
-          # Install Google Chrome
-          wget -q -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome.deb || sudo apt-get -f install -y
-          # Install matching ChromeDriver
-          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-          CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*})
-          wget -q https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/bin/chromedriver
-          sudo chmod +x /usr/bin/chromedriver
-          export CHROME_BIN=$(which google-chrome)
-          export CHROMEDRIVER_BIN=/usr/bin/chromedriver
-          echo "✅ Google Chrome installed at: $CHROME_BIN"
-          echo "✅ ChromeDriver installed at: $CHROMEDRIVER_BIN"
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: latest
+          chromedriver-version: latest
 
       - name: ▶️ Run UI Tests
         run: |
-          export DISPLAY=:99
           mvn test -Dtest=**/*BlazeDemoTests.java \
             -Dchrome.binary=$CHROME_BIN \
             -Dwebdriver.chrome.driver=$CHROMEDRIVER_BIN
