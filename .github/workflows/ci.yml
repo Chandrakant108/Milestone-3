@@ -147,15 +147,22 @@ jobs:
           echo "📊 Initializing DB schema..."
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
-      - name: 🖥️ Set up Chrome (Latest)
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: latest
-
-      - name: 🖥️ Set up ChromeDriver (Latest)
-        uses: browser-actions/setup-chromedriver@v2
-        with:
-          chromedriver-version: latest
+      - name: 🖥️ Install Chrome & ChromeDriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip xvfb
+          # Install latest stable Chrome
+          wget -qO- https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > chrome.deb
+          sudo apt install -y ./chrome.deb
+          # Set up ChromeDriver dynamically
+          sudo apt-get install -y curl
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f1)
+          echo "Detected Chrome version: $CHROME_VERSION"
+          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+          wget -N "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
+          unzip -o chromedriver_linux64.zip
+          sudo mv -f chromedriver /usr/bin/chromedriver
+          sudo chmod +x /usr/bin/chromedriver
 
       - name: ▶️ Run UI Tests (Headless)
         run: |
