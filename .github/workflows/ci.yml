@@ -12,7 +12,7 @@ env:
   DB_PORT: 3306
   DB_NAME: automation_tests
   DB_USER: root
-  DB_PASS: Ck@709136
+  DB_PASS: Ck@709136  # ⚠️ Use GitHub Secret in production
   CI: true  # Enables headless mode in BaseTest.java
 
 jobs:
@@ -147,25 +147,24 @@ jobs:
           echo "📊 Initializing DB schema..."
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
-      - name: 🔧 Setup temp directory
-        run: mkdir -p /tmp
-
-      - name: 🖥️ Install Chrome & ChromeDriver
+      - name: 🖥️ Install Chrome & ChromeDriver (Dynamic)
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip
+          sudo apt-get install -y wget unzip xvfb
           wget -qO- https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > chrome.deb
           sudo apt install -y ./chrome.deb
           CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f1)
           echo "Detected Chrome version: $CHROME_VERSION"
-          wget -N https://chromedriver.storage.googleapis.com/$CHROME_VERSION/chromedriver_linux64.zip
+          CHROMEDRIVER_VERSION=$(wget -qO- "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+          wget -N "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
           unzip -o chromedriver_linux64.zip
           sudo mv -f chromedriver /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
 
-      - name: ▶️ Run UI Tests
+      - name: ▶️ Run UI Tests (Headless)
         run: |
           export DISPLAY=:99
+          Xvfb :99 -screen 0 1920x1080x24 &
           mvn test -Dtest=**/*BlazeDemoTests.java \
             -Dchrome.binary=/usr/bin/google-chrome \
             -Dwebdriver.chrome.driver=/usr/bin/chromedriver
