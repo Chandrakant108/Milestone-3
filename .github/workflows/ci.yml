@@ -147,10 +147,17 @@ jobs:
           echo "📊 Initializing DB schema..."
           mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
-      - name: 🖥️ Setup ChromeDriver Automatically
-        uses: nanasess/setup-chromedriver@v1
+      - name: 🖥️ Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip xvfb
+          wget -qO- https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > chrome.deb
+          sudo apt install -y ./chrome.deb
+
+      - name: 🛠️ Setup ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
         with:
-          chromedriver-version: latest  # Automatically matches installed Chrome
+          chromedriver-version: match-browser
 
       - name: ▶️ Run UI Tests (Headless)
         run: |
