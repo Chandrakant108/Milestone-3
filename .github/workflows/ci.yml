@@ -13,6 +13,9 @@ env:
   DB_NAME: automation_tests
   DB_USER: root
   DB_PASS: Ck@709136  # ⚠️ Replace with GitHub Secret later
+  CHROME_BIN: /usr/bin/chromium
+  CHROMEDRIVER_BIN: /usr/bin/chromedriver
+  CI: true  # ✅ Automatically enables headless mode in BaseTest.java
 
 jobs:
   # =========================
@@ -69,15 +72,11 @@ jobs:
             fi
             sleep 2
           done
-          echo "🚀 Initializing database schema..."
-          if [ -f src/main/resources/sql/db-init.sql ]; then
-            mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
-          else
-            echo "❌ db-init.sql not found!" && exit 1
-          fi
+          echo "📊 Initializing DB schema..."
+          mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: ▶️ Run API Tests
-        run: mvn test -Dtest=**/JsonPlaceholderTests.java
+        run: mvn test -Dtest=**/*JsonPlaceholderTests.java
 
       - name: 📦 Upload API Artifacts
         uses: actions/upload-artifact@v4
@@ -145,28 +144,20 @@ jobs:
             fi
             sleep 2
           done
-          echo "🚀 Initializing database schema..."
-          if [ -f src/main/resources/sql/db-init.sql ]; then
-            mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
-          else
-            echo "❌ db-init.sql not found!" && exit 1
-          fi
+          echo "📊 Initializing DB schema..."
+          mysql -h 127.0.0.1 -P 3306 -u root -p${{ env.DB_PASS }} ${{ env.DB_NAME }} < src/main/resources/sql/db-init.sql
 
       - name: 🖥️ Install Chromium & ChromeDriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver || sudo apt-get install -y chromium chromium-driver
-          CHROME_PATH=$(which chromium-browser || which chromium)
-          DRIVER_PATH=$(which chromedriver)
-          echo "CHROME_BIN=$CHROME_PATH" >> $GITHUB_ENV
-          echo "CHROMEDRIVER_BIN=$DRIVER_PATH" >> $GITHUB_ENV
-          echo "✅ Chrome binary at: $CHROME_PATH"
-          echo "✅ ChromeDriver at: $DRIVER_PATH"
+          sudo apt-get install -y chromium chromium-driver
+          echo "✅ Chromium installed at: $CHROME_BIN"
+          echo "✅ ChromeDriver installed at: $CHROMEDRIVER_BIN"
 
-      - name: ▶️ Run UI Tests (Headless Chrome)
+      - name: ▶️ Run UI Tests (Automatic Mode)
         run: |
-          mvn test -Dtest=**/BlazeDemoTests.java \
-            -Dselenium.headless=true \
+          export DISPLAY=:99
+          mvn test -Dtest=**/*BlazeDemoTests.java \
             -Dchrome.binary=$CHROME_BIN \
             -Dwebdriver.chrome.driver=$CHROMEDRIVER_BIN
 

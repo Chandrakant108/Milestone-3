@@ -20,22 +20,22 @@ public class BaseTest {
     public void setUp() {
         ChromeOptions options = new ChromeOptions();
 
-        // ✅ Auto-detect Chrome binary from environment or fallback
-        String chromePath = System.getenv("CHROME_BIN");
-        if (chromePath != null && !chromePath.isEmpty()) {
-            options.setBinary(chromePath);
+        // ✅ Detect environment – if running in CI (GitHub Actions), use headless
+        String ciEnv = System.getenv("CI");
+        boolean isCI = ciEnv != null && ciEnv.equalsIgnoreCase("true");
+
+        if (isCI) {
+            System.out.println("🚀 Running in CI mode – enabling headless Chrome...");
+            options.addArguments("--headless", "--no-sandbox", "--disable-dev-shm-usage");
+        } else {
+            System.out.println("🖥️ Running locally – launching full Chrome browser...");
+            options.addArguments("--start-maximized");
         }
 
-        // ✅ Optional: useful flags for CI to avoid crashes
-        options.addArguments("--start-maximized");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        // ❌ Headless mode is NOT added — this runs Chrome with UI
-
-        // ✅ Auto-detect ChromeDriver path from environment
-        String driverPath = System.getenv("CHROMEDRIVER_BIN");
-        if (driverPath != null && !driverPath.isEmpty()) {
-            System.setProperty("webdriver.chrome.driver", driverPath);
+        // Optional: use CHROME_BIN and CHROMEDRIVER_BIN if provided by CI
+        String chromeBinary = System.getenv("CHROME_BIN");
+        if (chromeBinary != null && !chromeBinary.isEmpty()) {
+            options.setBinary(chromeBinary);
         }
 
         WebDriver webDriver = new ChromeDriver(options);
@@ -50,6 +50,7 @@ public class BaseTest {
     public void tearDown(ITestResult result) {
         WebDriver driver = DriverManager.getDriver();
 
+        // ✅ Capture screenshot ONLY if test failed
         if (result.getStatus() == ITestResult.FAILURE && driver != null) {
             String testName = result.getMethod().getMethodName();
             ScreenshotUtils.capture(driver, testName);
@@ -61,6 +62,7 @@ public class BaseTest {
         }
     }
 
+    // Manual screenshot helper
     public void takeScreenshot(String name) {
         WebDriver driver = DriverManager.getDriver();
         if (driver == null) return;
