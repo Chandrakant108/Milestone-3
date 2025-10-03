@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS execution_log (
     test_name VARCHAR(255),
     status VARCHAR(50),
     test_type VARCHAR(50),           -- ✅ UI / API / etc.
+    screenshot_path VARCHAR(500),     -- ✅ Added
     start_time DATETIME,
     end_time DATETIME,
     logs TEXT,
