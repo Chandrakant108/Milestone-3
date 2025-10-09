@@ -1,151 +1,260 @@
-# 🧪 AutomationFramework
+# Automation Test Framework – UI + API + CI/CD
 
-A robust and scalable Java-based automation testing framework designed for **parallel execution** of **UI** and **API** test suites.  
-It integrates powerful tools like **Selenium WebDriver**, **REST Assured**, and **TestNG**, while enabling **traceability**, **artifact storage**, and **report generation** — all in one place.
+## ✅ Project Overview
+
+This is a **Java-based Hybrid Automation Framework** that supports **UI Testing (Selenium WebDriver)** and **API Testing (REST Assured)** with **parallel execution, MySQL integration, reporting, and CI/CD using GitHub Actions**.
+
+This framework is modular, scalable, and designed for real-time project usage.
+
+---
+
+## 📦 Project Modules Overview
+
+This framework is organized into clean modules to support UI + API automation with reporting and CI/CD. Below is a summary of each module:
+
+### ✅ 1. BaseTest (UI Setup)
+
+Responsible for browser setup and teardown using Selenium WebDriver. Runs before every UI test.
+
+* Initializes Chrome browser (headless in CI/CD)
+* Handles browser cleanup
+* Captures screenshots on failure
+
+### ✅ 2. APIBaseTest (API Setup)
+
+Sets up REST Assured configuration for API testing.
+
+* Defines base URI
+* Common headers and request specs
+* Reusable API utilities
+
+### ✅ 3. Test Classes
+
+| Module                      | Purpose                                      |
+| --------------------------- | -------------------------------------------- |
+| `BlazeDemoTests.java`       | Contains 10 UI test cases for flight booking |
+| `JsonPlaceholderTests.java` | Contains 10 API tests using REST Assured     |
+
+### ✅ 4. Database Integration
+
+Database inserter utility stores results in MySQL.
+
+* UI results → `ui_tests` table
+* API results → `api_responses` table
+* Detailed logs → `execution_logs` table
+
+### ✅ 5. Listeners
+
+Listeners track execution and store results.
+
+| Listener                 | Purpose                                  |
+| ------------------------ | ---------------------------------------- |
+| `SuiteExecutionListener` | Logs suite start/end + screenshot at end |
+| `TestSuiteListener`      | Captures test lifecycle events           |
+| `DbResultListener`       | Saves results in database                |
+| `ReportListener`         | Sends logs to report system              |
+
+### ✅ 6. Reporting
+
+| File                       | Purpose                         |
+| -------------------------- | ------------------------------- |
+| `HtmlReportGenerator.java` | Generates HTML dashboard report |
+| CSV/Excel Reports          | Stored per execution            |
+| Screenshots                | Captured for failed UI tests    |
+
+### ✅ 7. CI/CD Pipeline (GitHub Actions)
+
+Automates test execution on each commit.
+
+* Runs UI + API tests in parallel
+* Uploads artifacts
+* Sets up MySQL automatically
 
 ---
 
 ## 🚀 Features
 
-- ⚡ **Parallel Execution** – Run multiple UI & API tests simultaneously to reduce execution time.
-- 🗄️ **Database Integration** – Store execution logs, test data, and results directly in **MySQL**.
-- 📊 **Comprehensive Reporting** – Automatically generate **HTML**, **CSV**, **Excel**, and **JUnit** reports.
-- 📁 **Artifact Storage** – Save screenshots, logs, and API request/response payloads for every test run.
-- ⏱️ **Scheduling Support** – Schedule tests with the built-in `ParallelTestScheduler`.
-- 🧩 **Traceability Support** – Track tests with **US ID** and **Test Case ID** mapping.
-- 🧪 **End-to-End Testing** – Includes **10 UI tests** for [BlazeDemo](https://blazedemo.com/) and **10 API tests** using [ReqRes](https://reqres.in/) / [JSONPlaceholder](https://jsonplaceholder.typicode.com/).
-- 🛠️ **Tech Stack** – Java, Selenium, REST Assured, TestNG, MySQL.
+| Feature            | Description                     |
+| ------------------ |---------------------------------|
+| UI Testing         | Selenium WebDriver + TestNG     |
+| API Testing        | REST Assured (JSONPlaceholder)  |
+| Parallel Execution | TestNG + Surefire Plugin        |
+| Database Logging   | Saves execution results in MySQL|
+| Reporting          | HTML, CSV,Excel,JUnit reports   |
+| CI/CD Integration  | GitHub Actions workflow         |
+| Screenshots        | Captured for failed UI tests    |
+| Traceability       | US_ID and TC_ID mapping         |
 
 ---
 
-## 📁 Project Structure
+## 📂 Project Structure
 
-AutomationFramework/
-├── artifacts/ # Stores execution artifacts
-│ ├── api/ # API request & response data
-│ ├── reports/ # HTML, CSV, Excel, JUnit reports
-│ └── screenshots/ # Captured screenshots
-├── config/
-│ └── db.properties # Database configuration
-├── drivers/ # WebDriver executables (if needed)
+```
+AutomationFramework
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml                     # GitHub CI pipeline for UI & API automation
+│
+├── artifacts/                         # Test execution artifacts
+│   ├── api/                           # API logs, responses
+│   ├── j-unit/                        # JUnit XML reports
+│   ├── reports/                       # Generated reports (HTML/CSV/Excel)
+│   └── screenshots/                   # Screenshots for UI test failures
+│
+│
 ├── src/
-│ └── main/java/
-│ └── org/automation/
-│ ├── listeners/ # TestNG listeners for reporting & execution events
-│ ├── reports/ # Report generators (HTML, CSV, Excel)
-│ ├── scheduler/ # Parallel execution scheduler
-│ ├── ui/ # UI test classes and utilities
-│ └── utils/ # Utility classes (DB, Excel, Reports, Screenshots)
-└── test/
-└── java/org/automation/
-├── api/ # API test classes and base classes
-├── config/ # Config managers
-└── drivers/ # WebDriver factory setup
-
+│   └── test/
+│       └── java/
+│           └── org/
+│               └── automation/
+│                   ├── api/                       # API automation module
+│                   │   ├── ApiBaseTest.java
+│                   │   ├── ApiTestMapper.java
+│                   │   └── JsonPlaceholderTests.java
+│                   │
+│                   ├── config/                    # Configuration handling
+│                   │   └── ConfigManager.java
+│                   │
+│                   ├── drivers/                   # WebDriver setup for UI
+│                   │   └── WebDriverFactory.java
+│                   │
+│                   ├── listeners/                 # TestNG listeners
+│                   │   ├── DbResultListener.java
+│                   │   ├── ReportListener.java
+│                   │   ├── SuiteExecutionListener.java
+│                   │   └── TestSuiteListener.java
+│                   │
+│                   ├── reports/                   # Custom report generators
+│                   │   ├── CsvReportGenerator.java
+│                   │   ├── ExcelReportGenerator.java
+│                   │   └── HtmlReportGenerator.java
+│                   │
+│                   ├── scheduler/                 # Parallel & scheduled executions
+│                   │   └── ParallelTestScheduler.java
+│                   │
+│                   ├── ui/                        # UI automation module
+│                   │   ├── BaseTest.java
+│                   │   ├── BlazeDemoTests.java
+│                   │   ├── DriverManager.java
+│                   │   └── UiTestMapper.java
+│                   │
+│                   └── utils/                     # Utility helper functions
+│                       ├── DatabaseInserter.java
+│                       ├── DatabaseUtils.java
+│                       ├── ExcelUtils.java
+│                       ├── ReportUtils.java
+│                       └── ScreenshotsUtils.java
+│
+├── pom.xml                                   # Maven dependencies & build settings
+├── README.md                                 # Framework documentation
+├── testng.xml                                # Master TestNG suite
+├── testng-api.xml                            # API-only suite
+└── testng-ui.xml                             # UI-only suite
+```
 
 ---
 
-## 🧪 Test Types
+## 🔧 Technologies Used
 
-### 🌐 UI Tests
-- Built with **Selenium WebDriver**
-- Includes 10 comprehensive tests for the BlazeDemo flight booking site.
-- Supports screenshot capture, artifact logging, and reporting.
-
-### 🔗 API Tests
-- Built with **REST Assured**
-- Includes 10 API tests using **ReqRes** / **JSONPlaceholder**
-- Request/Response data is stored as artifacts.
-
----
-
-## ⚙️ Technologies Used
-
-- **Language:** Java
-- **Test Framework:** TestNG
-- **UI Testing:** Selenium WebDriver
-- **API Testing:** REST Assured
-- **Database:** MySQL
-- **Build Tool:** Maven
-- **Reports:** HTML, CSV, Excel, JUnit
+* **Java 23**
+* **Selenium WebDriver**
+* **REST Assured**
+* **TestNG**
+* **MySQL Database**
+* **ExtentReports + Custom HTML Report**
+* **Apache POI (Excel Reports)**
+* **GitHub Actions (CI/CD)**
 
 ---
 
-## 📦 Setup & Installation
+## 🔗 MySQL Table Structure
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/AutomationFramework.git
-   cd AutomationFramework
+The framework stores execution logs in MySQL tables:
 
+* `execution_log` – Stores UI and API test summary
+* `api_responses` – Stores API request/response data
+* `ui_results` – Stores UI test status and screenshots
 
-2. Configure Database:
+---
 
-   * Update config/db.properties with your MySQL credentials.
+## ⚙️ How It Works
 
-   * Make sure the database automation_tests exists.
+### ✅ UI Test Execution Workflow
 
-3. Build the project:
+1. Start execution from **testng.xml**
+2. **BaseTest** starts WebDriver
+3. Run **BlazeDemoTests** (10 test cases)
+4. Log results using **DbResultListener → DatabaseInserter**
+5. Generate **HTML report** after execution
+6. Upload artifacts via **GitHub Actions CI**
 
-    mvn clean install
+### ✅ API Test Execution Workflow
 
+1. Start execution from **testng.xml**
+2. **BaseApiTest** sets BaseURI
+3. Run API tests (`JsonPlaceholderTests` / `10 test cases`)
+4. Save responses into MySQL
+5. Reports generated
+6. Pipeline runs in **GitHub Actions**
 
-4. Run Tests:
+---
 
-  * All tests:
+## ⚙️ Parallel Execution
 
-     mvn test
+* Configured using TestNG and Maven Surefire plugin
+* Runs **20 tests** (10 UI + 10 API) in parallel
 
+---
 
-  * Only UI tests:
+## 🚀 How to Run
 
-    mvn -DsuiteFile=testng-ui.xml test
+### ✅ Run from Command Line
 
+```
+mvn clean test
+```
 
-* Only API tests:
+### ✅ Run Specific Tests
 
-   mvn -DsuiteFile=testng-api.xml test
+```
+mvn -Dgroups=ui test
+mvn -Dgroups=api test
+```
 
+---
 
-📊 Reports & Artifacts
+## 📊 Reports Generated
 
-After execution, reports and artifacts are generated in the artifacts/ directory:
+| **Report Type | Location**            |
+| Api artifacts | artifacts/api/        |
+| HTML Report   | artifacts/reports/    |
+| CSV Report    | artifacts/reports/    |
+| JUnit Report  | artifacts/j-unit/     |
+| Screenshots   | artifacts/screenshots |
 
-Artifact Type	Location
-HTML Reports	artifacts/reports/html/
-CSV Reports	artifacts/reports/csv/
-Excel Reports	artifacts/reports/excel/
-JUnit Reports	target/surefire-reports/
-Screenshots	artifacts/screenshots/
-API Logs	artifacts/api/
+---
 
+## 🔄 CI/CD – GitHub Actions
 
-🧠 Advanced Features
+Every commit triggers:
+✔ Build + Test Execution
+✔ Parallel UI + API Tests
+✔ Upload HTML Report & Logs as Artifacts
 
-   * Database Result Storage: All test results are inserted into MySQL for further analytics and dashboards.
+---
 
-   * Traceability: Each test case links to a US ID and TC ID for tracking user stories.
+## ✅ Advantages of This Framework
 
-   * Parallel Execution: Configurable thread count in testng.xml for high-speed parallel testing.
+✔ Real-time test execution tracking via database
+✔ Parallel execution saves time
+✔ CI/CD automated testing pipeline
+✔ Test traceability using US_ID and TC_ID
+✔ Modular and reusable structure
 
-   * Scheduler: Use ParallelTestScheduler to trigger scheduled or automated test runs.
+---
 
-
-🛣️ Roadmap / Future Enhancements
-
-   * 📈 Integration with CI/CD (Jenkins, GitHub Actions)
-
-   * 📬 Email notifications for test reports
-
-   * 📊 Dashboard for result visualization
-
-   * 🧪 Support for cross-browser testing
-
-
-🤝 Contributing
-
-Contributions are welcome! Please fork this repository, create a feature branch, and submit a pull request.
-
+Feel free to contribute or raise an issue if you want improvements.
 
 📜 License
 

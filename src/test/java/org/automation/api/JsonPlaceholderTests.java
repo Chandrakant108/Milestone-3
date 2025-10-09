@@ -17,10 +17,10 @@ public class JsonPlaceholderTests extends ApiBaseTest {
     public void testGetAllPosts() {
         Reporter.getCurrentTestResult().setAttribute("US_ID", "US201");
 
-        Response response = given().contentType(ContentType.JSON)
-                .when().get("/posts")
-                .then().statusCode(200).body("size()", greaterThan(0))
-                .extract().response();
+        Response response = given().contentType(ContentType.JSON) // set content type
+                .when().get("/posts")   // send GET request
+                .then().statusCode(200).body("size()", greaterThan(0))  // Validate HTTP 200 OK and Validate response size > 0
+                .extract().response();   // Extract full response for logging
 
         Reporter.getCurrentTestResult().setAttribute("requestPayload", "GET /posts");
         Reporter.getCurrentTestResult().setAttribute("responseBody", response.asString());
